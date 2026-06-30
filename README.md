@@ -19,6 +19,7 @@ An AI-powered FAQ chatbot built for Sharad Institute of Technology and College o
 ## 📸 Screenshot
 
 
+<img width="1137" height="850" alt="Screenshot 2026-06-30 183100" src="https://github.com/user-attachments/assets/d66848b9-439a-438f-83d6-9900f5ff0a06" />
 
 ## ⚙️ How It Works
 
