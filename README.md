@@ -1,40 +1,53 @@
-# SITCOE FAQ Chatbot
+# SITCOE FAQ Chatbot 🤖
 
-Spring Boot + HTML/CSS/JS chatbot that answers college FAQs using the Groq API.
+An AI-powered FAQ chatbot built for Sharad Institute of Technology and College of Engineering (SITCOE) that answers student queries about courses, campus facilities, and college information using natural language.
 
-## How to run
+## 🚀 Features
 
-1. Get a free Groq API key from https://console.groq.com (you already have one from StudentAgent, reuse it).
-2. Set it as an environment variable in your terminal:
-   - Windows (cmd): `set GROQ_API_KEY=your_key_here`
-   - Windows (PowerShell): `$env:GROQ_API_KEY="your_key_here"`
-   - Mac/Linux: `export GROQ_API_KEY=your_key_here`
-3. From the project folder, run: `mvn spring-boot:run`
-4. Open `http://localhost:8080` in your browser - the chat UI loads automatically.
+- Conversational chat interface — ask questions in plain English
+- AI-powered responses using Groq's LLM API
+- Custom knowledge base covering courses, WiFi, gym, canteen timings, and more
+- Lightweight, fast, and easy to extend with new FAQs
 
-## How it works (read this before any interview)
+## 🛠️ Tech Stack
 
-**Flow:** Browser (index.html) → POST /api/chat → ChatController → GroqService → Groq API → answer flows back the same path.
+- **Backend:** Java, Spring Boot, REST API
+- **AI:** Groq API (LLM-based responses)
+- **Frontend:** HTML, CSS, JavaScript
+- **Build Tool:** Maven
 
-- `FaqSitApplication.java` - app entry point. Also defines a `RestTemplate` bean (the tool Spring uses to make outgoing HTTP calls to Groq).
-- `ChatRequest.java` / `ChatResponse.java` - plain DTOs (Data Transfer Objects). They just describe the shape of the JSON going in (`{"question": "..."}`) and out (`{"answer": "..."}`). Spring auto-converts JSON ↔ Java objects using these.
-- `ChatController.java` - the REST layer. Exposes `POST /api/chat`. Its only job is to receive the request, hand it to the service, and return the result. Controllers should stay thin - no business logic here.
-- `GroqService.java` - the actual logic:
-  1. Builds an HTTP header with your API key as a Bearer token (this is how Groq authenticates you).
-  2. Builds a request body with a "system prompt" (instructions telling the AI it's a SITCOE FAQ bot and what facts it knows) plus the user's actual question.
-  3. Sends it to Groq's `/chat/completions` endpoint (same API shape as OpenAI - Groq is "OpenAI-compatible").
-  4. Parses the JSON response to pull out just the answer text (`choices[0].message.content`).
-- `index.html` - plain JS `fetch()` call to your own backend on button click / Enter key. No frontend framework, so it's easy to explain.
+## 📸 Screenshot
 
-## Things you should be ready to explain in an interview
 
-- **Why a system prompt instead of hardcoding FAQ answers?** It's more flexible - you can update the college facts in one string instead of writing if/else logic, and the AI can paraphrase + handle question variations.
-- **Why backend calls Groq instead of frontend calling it directly?** Security - your API key would be exposed in browser JS if called from the frontend. Routing through Spring Boot keeps the key server-side only.
-- **What's RestTemplate?** Spring's class for making outgoing HTTP requests (here, to Groq's API). It's the synchronous, simpler alternative to WebClient.
-- **What happens if Groq API fails?** Currently returns a friendly fallback message - you could extend this with retries or logging (mention this as a "future improvement" if asked).
+<img width="1137" height="850" alt="Screenshot 2026-06-30 183100" src="https://github.com/user-attachments/assets/d66848b9-439a-438f-83d6-9900f5ff0a06" />
 
-## Possible upgrades to mention if asked "what would you improve?"
-- Add a real FAQ database (PostgreSQL) instead of hardcoded facts in the prompt - same pattern as your DevCollab project.
-- Add chat history / conversation memory.
-- Rate-limit the endpoint to avoid API cost abuse.
-- Deploy backend to Render and frontend to Vercel, same as DevCollab.
+## ⚙️ How It Works
+
+1. User types a question in the chat UI.
+2. Frontend sends the question to the Spring Boot backend via a REST endpoint (`/api/chat`).
+3. Backend forwards the query to Groq's API along with a system prompt containing SITCOE-specific facts.
+4. AI generates a contextual response, which is sent back and displayed in the chat.
+
+## 🏃 Run Locally
+
+1. Clone the repo
+git clone https://github.com/abhishekmanegit/sitcoe-faq-chatbot.git
+2. Set your Groq API key as an environment variable
+GROQ_API_KEY=your_key_here
+3. Run the app
+mvn spring-boot:run
+4. Open `http://localhost:8080` in your browser
+
+## 📂 Project Structure
+src/main/java/com/faqsit/
+├── controller/    → REST API endpoint
+├── service/       → Groq API integration & prompt logic
+├── model/         → Request/Response DTOs
+└── resources/
+└── static/    → Frontend (HTML/CSS/JS)
+
+## ✨ Future Improvements
+
+- Database-backed FAQ storage instead of hardcoded prompt
+- Chat history / conversation memory
+- Admin panel to update FAQs without code changes
