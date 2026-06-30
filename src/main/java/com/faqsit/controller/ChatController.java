@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*") // fine for local/learning use; restrict this in real production
+@CrossOrigin(origins = "*")
 public class ChatController {
 
     private final GroqService groqService;
@@ -16,7 +16,7 @@ public class ChatController {
         this.groqService = groqService;
     }
 
-    // Frontend calls: POST /api/chat  with body { "question": "..." }
+
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
         String answer = groqService.getAnswer(request.getQuestion());
