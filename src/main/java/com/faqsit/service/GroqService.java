@@ -40,6 +40,9 @@ public class GroqService {
           Communication (ECE), AI & Data Science (AIDS), Mechanical,
           Mechatronics.
         - Canteen timings: 9 AM to 4 PM.
+        - who is managing director:  Anil Bagane
+        - what is annual fee : its around 60,000
+        - how many departments are there : different departments like CSE,AIDS,ECE,Mechnical,Robotics,Mechtronics are offered
 
         Keep answers short (2-4 sentences) and friendly.
         """;
