@@ -28,7 +28,7 @@ An AI-powered FAQ chatbot built for Sharad Institute of Technology and College o
 3. Backend forwards the query to Groq's API along with a system prompt containing SITCOE-specific facts.
 4. AI generates a contextual response, which is sent back and displayed in the chat.
 
-## 🏃 Run Locally
+## 🏃To Run Locally
 
 1. Clone the repo
 git clone https://github.com/abhishekmanegit/sitcoe-faq-chatbot.git
