@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <title>SITCOE FAQ Chatbot</title>
 <style>
   * { box-sizing: border-box; }
@@ -107,6 +108,7 @@
     div.textContent = text;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    return div;
   }
 
   async function sendQuestion() {
@@ -116,7 +118,7 @@
     addMessage(question, 'user');
     input.value = '';
     sendBtn.disabled = true;
-    addMessage('Typing...', 'bot');
+    const typing = addMessage('Typing...', 'bot');
 
     try {
       // Calls our Spring Boot backend, which then calls Groq behind the scenes
@@ -126,13 +128,22 @@
         body: JSON.stringify({ question })
       });
 
-      const data = await response.json();
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        data = null;
+      }
 
-      // remove the "Typing..." placeholder
-      messagesDiv.removeChild(messagesDiv.lastChild);
-      addMessage(data.answer, 'bot');
+      typing.remove();
+      if (!response.ok || !data || !data.answer) {
+        const detail = data && (data.answer || data.error);
+        addMessage(detail || ('The server returned an error (' + response.status + '). Please try again.'), 'bot');
+      } else {
+        addMessage(data.answer, 'bot');
+      }
     } catch (err) {
-      messagesDiv.removeChild(messagesDiv.lastChild);
+      typing.remove();
       addMessage('Something went wrong. Is the backend running?', 'bot');
     } finally {
       sendBtn.disabled = false;

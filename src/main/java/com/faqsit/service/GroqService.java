@@ -1,10 +1,14 @@
 package com.faqsit.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -12,6 +16,8 @@ import java.util.Map;
 
 @Service
 public class GroqService {
+
+    private static final Logger log = LoggerFactory.getLogger(GroqService.class);
 
     private final RestTemplate restTemplate;
 
@@ -22,7 +28,9 @@ public class GroqService {
     @Value("${groq.model:openai/gpt-oss-120b}")
     private String model;
 
-    private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+    // Overridable for tests; production always uses the real Groq endpoint
+    @Value("${groq.url:https://api.groq.com/openai/v1/chat/completions}")
+    private String groqUrl;
 
     // This is what makes it an "FAQ" bot instead of a generic chatbot -
     // we tell the model what it's allowed to talk about and give it the facts to answer from.
@@ -52,6 +60,10 @@ public class GroqService {
     }
 
     public String getAnswer(String userQuestion) {
+        if (userQuestion == null || userQuestion.isBlank()) {
+            return "Please type a question first.";
+        }
+
         // 1. Build headers - Groq needs a Bearer token like most OpenAI-compatible APIs
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -71,18 +83,49 @@ public class GroqService {
 
         // 3. Call Groq and parse the response.
         // Spring auto-converts the JSON response into a Map for us (Jackson under the hood).
-        @SuppressWarnings("unchecked")
-        Map<String, Object> response = restTemplate.postForObject(GROQ_URL, requestEntity, Map.class);
+        // Any Groq-side failure (bad key, decommissioned model, rate limit, network)
+        // throws here - we catch it so /api/chat answers with 200 instead of a 500.
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(groqUrl, requestEntity, Map.class);
 
-        if (response == null || !response.containsKey("choices")) {
-            return "Sorry, I couldn't reach the assistant right now. Please try again.";
+            if (response == null || !response.containsKey("choices")) {
+                log.warn("Groq response had no choices: {}", response);
+                return "Sorry, I couldn't reach the assistant right now. Please try again.";
+            }
+
+            // 4. Navigate response structure: choices[0].message.content
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+            Map<String, Object> firstChoice = choices.get(0);
+            Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
+            Object content = message.get("content");
+
+            if (content == null || ((String) content).isBlank()) {
+                return "I couldn't generate an answer for that. Please try rephrasing your question.";
+            }
+            return (String) content;
+        } catch (RestClientResponseException e) {
+            log.error("Groq API returned HTTP {} (model={}): {}",
+                    e.getStatusCode(), model, e.getResponseBodyAsString());
+            return friendlyGroqError(e.getStatusCode().value());
+        } catch (RestClientException e) {
+            log.error("Groq API call failed (model={}): {}", model, e.getMessage());
+            return "Sorry, I couldn't reach the assistant right now. Please check the server logs and try again.";
         }
+    }
 
-        // 4. Navigate response structure: choices[0].message.content
-        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-        Map<String, Object> firstChoice = choices.get(0);
-        Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
-
-        return (String) message.get("content");
+    // Turns Groq's HTTP failures into something a student can actually read,
+    // while pointing the developer at the likely misconfiguration.
+    private String friendlyGroqError(int status) {
+        if (status == 401 || status == 403) {
+            return "The assistant is not authorised - GROQ_API_KEY is missing or invalid. Please contact the college office.";
+        }
+        if (status == 404 || status == 400) {
+            return "The assistant is misconfigured (rejected model or request). Please contact the college office.";
+        }
+        if (status == 429) {
+            return "I'm getting too many requests right now. Please wait a moment and try again.";
+        }
+        return "Sorry, the assistant is unavailable right now. Please try again in a moment.";
     }
 }
